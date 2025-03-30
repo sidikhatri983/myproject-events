@@ -13,6 +13,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -37,6 +38,7 @@ public class EventService {
     public void deleteEvent(Long id, String email) {
         Event event = eventRepository.findById(id).orElseThrow();
         if (event.getUser().getEmail().equals(email)) {
+            invitationRepository.deleteAllByEvent_id(id);
             eventRepository.delete(event);
         } else {
             throw new SecurityException("Vous n'avez pas l'autorisation de supprimer cet événement.");
@@ -84,7 +86,10 @@ public class EventService {
         return eventRepository.save(existingEvent);
     }
     public List<Event> getEventsByCity(String city) {
-        return eventRepository.findByLocation(city); // This will fetch events based on the city
+        List<Event> events = eventRepository.findByLocationIgnoreCase(city);
+        return events;
     }
+
+
 }
 

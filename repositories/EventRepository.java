@@ -11,7 +11,6 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<Event, Long> {
     // You can add custom queries if necessary
     List<Event> findByUser(AppUser user);
-    List<Event> findByLocationContainingIgnoreCase(String location);
-    List<Event> findByLocation(String city);
+    List<Event> findByLocationIgnoreCase(String city);
 }
 

@@ -6,7 +6,7 @@ import com.even.gestion.models.GlobalEvent;
 import com.even.gestion.repositories.AppUserRepository;
 import com.even.gestion.repositories.EventRepository;
 import com.even.gestion.services.EventService;
-import com.even.gestion.services.GlobalEventService;
+import com.even.gestion.services.TicketmasterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,7 +30,7 @@ public class EventController {
     @Autowired
     private AppUserRepository userRepository;
     @Autowired
-    GlobalEventService globalEventService;
+    private TicketmasterService openEventService;
     @Autowired
     EventRepository eventRepository;
     private static final Logger logger = LoggerFactory.getLogger(EventController.class);
@@ -97,19 +96,34 @@ public class EventController {
         eventService.updateEvent(id, event);
         return "redirect:/events";
     }
+
     @GetMapping("/search")
-    public String searchEvents(@RequestParam String city, Model model) {
-        // Fetch local events based on city
-        List<Event> localEvents = eventService.getEventsByCity(city);
+    public String searchEvents(@RequestParam(required = false) String city, Model model) {
+        if (city == null || city.trim().isEmpty()) {
+            return "redirect:/search";  // Handle case where city is empty or null
+        }
 
-        // Fetch global events based on city (Eventbrite API)
-        List<GlobalEvent> globalEvents = globalEventService.getEventsByCity(city);
+        try {
+            // Événements locaux depuis la base de données
+            List<Event> localEvents = eventService.getEventsByCity(city);
+            // Événements globaux depuis Open Event API
+            List<GlobalEvent> globalEvents = openEventService.getEventsByCity(city);
 
-        model.addAttribute("city", city);
-        model.addAttribute("localEvents", localEvents);
-        model.addAttribute("globalEvents", globalEvents);
+            model.addAttribute("city", city);
+            model.addAttribute("localEvents", localEvents);
+            model.addAttribute("globalEvents", globalEvents);
 
-        return "results"; // Display results.html
+            // Add flags if no events found
+            model.addAttribute("noLocalEvents", localEvents.isEmpty());
+            model.addAttribute("noGlobalEvents", globalEvents.isEmpty());
+
+            return "results"; // Affiche results.html
+        } catch (Exception e) {
+            model.addAttribute("error", "Error fetching events. Please try again later.");
+            return "results"; // Show results page with error message
+        }
     }
+
+
 }
 
